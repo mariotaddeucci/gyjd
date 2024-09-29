@@ -57,6 +57,9 @@ class GYJDCallable:
 
         raise GYJDException("This should never happen")
 
+    def _call_with_parameters(self, parameters: Dict[str, Any]) -> Any:
+        return self.__call__(**parameters)
+
     def __getattr__(self, attr):
         return getattr(self._func, attr)
 
@@ -105,9 +108,7 @@ class GYJDCallable:
         strategy: Literal[
             "sequential",
             "thread_map",
-            "process_map",
-            "thread_as_complete",
-            "process_as_complete",
+            "thread_as_completed",
         ] = "sequential",
     ) -> Generator[Any, None, None]:
         combinations = (
@@ -117,23 +118,24 @@ class GYJDCallable:
 
         if strategy == "sequential":
             for combination in combinations:
-                yield self.__call__(**combination)
+                yield self._call_with_parameters(combination)
             return
 
         executor_type, execution_mode = strategy.split("_", 1)
 
         executor_cls = {
             "thread": concurrent.futures.ThreadPoolExecutor,
-            "process": concurrent.futures.ProcessPoolExecutor,
+            # "process": concurrent.futures.ProcessPoolExecutor,
+            # TODO: Add process pool executor
         }[executor_type]
 
         with executor_cls(max_workers=max_workers) as executor:
             if execution_mode == "map":
-                for result in executor.map(self.__call__, combinations):
+                for result in executor.map(self._call_with_parameters, combinations):
                     yield result
-            elif execution_mode == "as_complete":
+            elif execution_mode == "as_completed":
                 tasks = (
-                    executor.submit(self.__call__, combination)
+                    executor.submit(self._call_with_parameters, combination)
                     for combination in combinations
                 )
                 for future in concurrent.futures.as_completed(tasks):

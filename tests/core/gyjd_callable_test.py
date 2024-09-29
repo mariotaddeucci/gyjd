@@ -88,7 +88,7 @@ def test_expand_thread_map():
     assert result == [5, 6, 6, 7]
 
 
-def test_expand_thread_async():
+def test_expand_thread_as_completed():
     def func(a, b):
         return a + b
 

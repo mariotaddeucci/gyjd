@@ -47,10 +47,10 @@ class CLI:
         instance.commands.update({name: func})
 
     @classmethod
-    def execute(cls):
-        parser = argparse.ArgumentParser(description="CLI Manager")
-        parser.add_argument("command", type=str, help="Nome do comando a ser executado")
-        parser.add_argument("--json", type=str, help="Parâmetro JSON opcional")
+    def executor(cls):
+        parser = argparse.ArgumentParser(description="CLI Executor")
+        parser.add_argument("command", type=str, help="Command to execute")
+        parser.add_argument("--json", type=str, help="Arguments in JSON format")
 
         args, unknown = parser.parse_known_args()
 

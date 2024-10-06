@@ -1,7 +1,7 @@
 from functools import partial
 from typing import Callable, Optional
 
-from gyjd.core.cli_manager import CLI
+from gyjd.core.cli import CLI
 from gyjd.core.gyjd_callable import GYJDCallable
 from gyjd.core.logger import Logger
 from gyjd.core.simple_injector import Dependency, inject_dependencies

@@ -45,9 +45,9 @@ class GYJDCallable:
             attempts -= 1
             if not attempts or isinstance(raised_exceptions[-1], GYJDFailFastException):
                 prepared_exception = GYJDMultipleException(raised_exceptions)
-                if not self._return_exception_on_fail:
-                    raise prepared_exception
-                return prepared_exception
+                if self._return_exception_on_fail:
+                    return prepared_exception
+                raise prepared_exception
 
             time.sleep(delay)
             delay *= self._retry_backoff

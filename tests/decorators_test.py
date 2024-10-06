@@ -1,4 +1,4 @@
-from gyjd.decorators import gyjd
+from gyjd import gyjd
 
 
 def test_gyjd_decorator_without_parameters():

@@ -23,7 +23,7 @@ class GYJDCallable:
         retry_backoff=1,
         retry_on_exceptions=(Exception,),
     ):
-        self._func: Callable = func
+        self._func = func
         self._retry_attempts = retry_attempts
         self._retry_delay = retry_delay
         self._retry_max_delay = retry_max_delay
@@ -32,6 +32,9 @@ class GYJDCallable:
         self._return_exception_on_fail = return_exception_on_fail
 
     def __call__(self, *args, **kwargs):
+        return self._attempt_call(*args, **kwargs)
+
+    def _attempt_call(self, *args, **kwargs):
         raised_exceptions = []
         attempts = self._retry_attempts + 1
         delay = self._retry_delay
@@ -39,11 +42,13 @@ class GYJDCallable:
         while attempts >= 0:
             try:
                 return self._func(*args, **kwargs)
+            except GYJDFailFastException:
+                return
             except self._retry_on_exceptions as e:
                 raised_exceptions.append(e)
 
             attempts -= 1
-            if not attempts or isinstance(raised_exceptions[-1], GYJDFailFastException):
+            if not attempts:
                 prepared_exception = GYJDMultipleException(raised_exceptions)
                 if self._return_exception_on_fail:
                     return prepared_exception
@@ -51,7 +56,6 @@ class GYJDCallable:
 
             time.sleep(delay)
             delay *= self._retry_backoff
-
             if self._retry_max_delay is not None:
                 delay = min(delay, self._retry_max_delay)
 
@@ -60,13 +64,12 @@ class GYJDCallable:
     def _call_with_parameters(self, parameters: Dict[str, Any]) -> Any:
         return self.__call__(**parameters)
 
-    def __getattr__(self, attr):
-        return getattr(self._func, attr)
-
     def partial(self, *args, **kwargs) -> "GYJDCallable":
+        # Use functools.partial to bind arguments and recreate the GYJDCallable instance
         return self._recreate(func=functools.partial(self._func, *args, **kwargs))
 
-    def _recreate(self, **new_krawgs) -> "GYJDCallable":
+    def _recreate(self, **new_kwargs) -> "GYJDCallable":
+        # Create a new instance of GYJDCallable with updated parameters
         new_args = {
             "func": self._func,
             "retry_attempts": self._retry_attempts,
@@ -75,31 +78,10 @@ class GYJDCallable:
             "retry_backoff": self._retry_backoff,
             "retry_on_exceptions": self._retry_on_exceptions,
             "return_exception_on_fail": self._return_exception_on_fail,
-            **new_krawgs,
+            **new_kwargs,
         }
 
         return self.__class__(**new_args)
-
-    def retry(
-        self,
-        exceptions=(Exception,),
-        attempts=-0,
-        delay=0,
-        max_delay=None,
-        backoff=1,
-    ) -> "GYJDCallable":
-        return self._recreate(
-            retry_on_exceptions=exceptions,
-            retry_attempts=attempts,
-            retry_delay=delay,
-            retry_max_delay=max_delay,
-            retry_backoff=backoff,
-        )
-
-    def return_exception_on_fail(
-        self, return_exception_on_fail: bool = True
-    ) -> "GYJDCallable":
-        return self._recreate(return_exception_on_fail=return_exception_on_fail)
 
     def expand(
         self,
@@ -109,6 +91,8 @@ class GYJDCallable:
             "sequential",
             "thread_map",
             "thread_as_completed",
+            "process_map",
+            "process_as_completed",
         ] = "sequential",
     ) -> Generator[Any, None, None]:
         combinations = (
@@ -125,8 +109,7 @@ class GYJDCallable:
 
         executor_cls = {
             "thread": concurrent.futures.ThreadPoolExecutor,
-            # "process": concurrent.futures.ProcessPoolExecutor,
-            # TODO: Add process pool executor
+            "process": concurrent.futures.ProcessPoolExecutor,
         }[executor_type]
 
         with executor_cls(max_workers=max_workers) as executor:

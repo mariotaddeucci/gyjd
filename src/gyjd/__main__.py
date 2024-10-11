@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 
@@ -8,23 +9,44 @@ def install_dependencies():
     try:
         import nuitka
     except ImportError:
-        print("Nuitka not found. Installing package gyjd[compiler]...")
+        print("Installing package gyjd[compiler]...")
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", "gyjd[compiler]"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
+        print("Successfully installed gyjd[compiler].")
 
 
 def compile_file(filename):
+    install_dependencies()
+    dist_path = "dist"
     try:
+        print(f"Compiling {filename}...")
         subprocess.run(
-            ["nuitka", "--follow-imports", "--onefile", filename], check=True
+            [
+                sys.executable,
+                "-m",
+                "nuitka",
+                "--follow-imports",
+                "--onefile",
+                f"--output-dir={dist_path}",
+                "--assume-yes-for-downloads",
+                filename,
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
-        print(f"Successfully compiled {filename} using Nuitka.")
+        print(f"Successfully compiled {filename}.")
     except subprocess.CalledProcessError as e:
         print(f"Error during compilation: {e}", file=sys.stderr)
         sys.exit(1)
+
+    for entry in os.listdir(dist_path):
+        entry_uri = os.path.join(dist_path, entry)
+        if not os.path.isfile(entry_uri):
+            shutil.rmtree(entry_uri)
 
 
 def main():

@@ -48,8 +48,16 @@ class CLI:
 
     @classmethod
     def executor(cls):
+        cli = cls.get_instance()
+
         parser = argparse.ArgumentParser(description="CLI Executor")
-        parser.add_argument("command", type=str, help="Command to execute")
+        parser.add_argument(
+            "command",
+            type=str,
+            help="Command to execute",
+            default="help",
+            choices=list(cli.commands.keys()),
+        )
         parser.add_argument("--json", type=str, help="Arguments in JSON format")
 
         args, unknown = parser.parse_known_args()
@@ -59,8 +67,6 @@ class CLI:
             key = unknown[i].lstrip("--")
             value = unknown[i + 1]
             kwargs[key] = value
-
-        cli = cls.get_instance()
 
         if kwargs and args.json:
             cli.logger.error("Only one of JSON or key-value arguments can be passed")

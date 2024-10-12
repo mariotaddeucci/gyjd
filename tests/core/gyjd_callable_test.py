@@ -79,9 +79,7 @@ def test_expand_sequential():
 def test_expand_thread_map():
     gyjd_callable = GYJDCallable(func=func_simple_sum)
     result = list(
-        gyjd_callable.expand(
-            parameters={"a": [1, 2], "b": [4, 5]}, strategy="thread_map"
-        ),
+        gyjd_callable.expand(parameters={"a": [1, 2], "b": [4, 5]}, strategy="thread_map"),
     )
     assert result == [5, 6, 6, 7]
 
@@ -89,9 +87,7 @@ def test_expand_thread_map():
 def test_expand_thread_as_completed():
     gyjd_callable = GYJDCallable(func=func_simple_sum)
     result = list(
-        gyjd_callable.expand(
-            parameters={"a": [1, 2], "b": [4, 5]}, strategy="thread_as_completed"
-        ),
+        gyjd_callable.expand(parameters={"a": [1, 2], "b": [4, 5]}, strategy="thread_as_completed"),
     )
     result.sort()
     assert result == [5, 6, 6, 7]
@@ -100,9 +96,7 @@ def test_expand_thread_as_completed():
 def test_expand_process_map():
     gyjd_callable = GYJDCallable(func=func_simple_sum)
     result = list(
-        gyjd_callable.expand(
-            parameters={"a": [1, 2], "b": [4, 5]}, strategy="process_map"
-        ),
+        gyjd_callable.expand(parameters={"a": [1, 2], "b": [4, 5]}, strategy="process_map"),
     )
     assert result == [5, 6, 6, 7]
 
@@ -110,9 +104,7 @@ def test_expand_process_map():
 def test_expand_process_as_completed():
     gyjd_callable = GYJDCallable(func=func_simple_sum)
     result = list(
-        gyjd_callable.expand(
-            parameters={"a": [1, 2], "b": [4, 5]}, strategy="process_as_completed"
-        ),
+        gyjd_callable.expand(parameters={"a": [1, 2], "b": [4, 5]}, strategy="process_as_completed"),
     )
     result.sort()
     assert result == [5, 6, 6, 7]

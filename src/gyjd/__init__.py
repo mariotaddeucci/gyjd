@@ -1,10 +1,10 @@
+import logging
 from functools import partial
 from typing import Callable, Optional
 
 from gyjd.core.cli import CLI
 from gyjd.core.gyjd_callable import GYJDCallable
-from gyjd.core.logger import Logger
-from gyjd.core.simple_injector import Dependency, inject_dependencies
+from gyjd.core.simple_injector import inject_dependencies, register_dependency
 
 
 class gyjd:
@@ -41,3 +41,15 @@ class gyjd:
         CLI.registry(inject_dependencies(func), alias)
 
         return func
+
+
+@register_dependency
+def get_logger() -> logging.Logger:
+    logger = logging.getLogger("gyjd")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    return logger

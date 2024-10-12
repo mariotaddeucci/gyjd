@@ -1,9 +1,9 @@
 import argparse
 import json
-from typing import Callable, Dict, get_type_hints
+from logging import Logger
+from typing import Callable, Dict
 
-from gyjd.core.logger import Logger
-from gyjd.core.simple_injector import Dependency, inject_dependencies
+from gyjd.core.simple_injector import inject_dependencies
 
 
 class CLI:
@@ -16,19 +16,6 @@ class CLI:
 
     def help(self):
         print("Available commands and their arguments:")
-        for command, func in self.commands.items():
-            print(f"  {command}:")
-            hints = {
-                arg: arg_type.__name__
-                for arg, arg_type in get_type_hints(func).items()
-                if not issubclass(arg_type, Dependency)
-            }
-
-            if hints:
-                for arg, arg_type in hints.items():
-                    print(f"    - {arg}: {arg_type}")
-            else:
-                print("    - No arguments")
 
     @classmethod
     def get_instance(cls):

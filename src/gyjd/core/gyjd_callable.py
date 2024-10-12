@@ -65,11 +65,9 @@ class GYJDCallable:
         return self.__call__(**parameters)
 
     def partial(self, *args, **kwargs) -> "GYJDCallable":
-        # Use functools.partial to bind arguments and recreate the GYJDCallable instance
         return self._recreate(func=functools.partial(self._func, *args, **kwargs))
 
     def _recreate(self, **new_kwargs) -> "GYJDCallable":
-        # Create a new instance of GYJDCallable with updated parameters
         new_args = {
             "func": self._func,
             "retry_attempts": self._retry_attempts,
@@ -95,10 +93,7 @@ class GYJDCallable:
             "process_as_completed",
         ] = "sequential",
     ) -> Generator[Any, None, None]:
-        combinations = (
-            dict(zip(parameters.keys(), comb))
-            for comb in itertools.product(*parameters.values())
-        )
+        combinations = (dict(zip(parameters.keys(), comb)) for comb in itertools.product(*parameters.values()))
 
         if strategy == "sequential":
             for combination in combinations:
@@ -117,10 +112,7 @@ class GYJDCallable:
                 for result in executor.map(self._call_with_parameters, combinations):
                     yield result
             elif execution_mode == "as_completed":
-                tasks = (
-                    executor.submit(self._call_with_parameters, combination)
-                    for combination in combinations
-                )
+                tasks = (executor.submit(self._call_with_parameters, combination) for combination in combinations)
                 for future in concurrent.futures.as_completed(tasks):
                     yield future.result()
             else:

@@ -1,28 +1,38 @@
+import functools
 import inspect
-from abc import ABC, abstractmethod
 from functools import cached_property, wraps
-from typing import Generic, Type, TypeVar
+from typing import Callable, Optional, Type
 
-T = TypeVar("T")
-
-
-class Dependency(ABC, Generic[T]):
-    @classmethod
-    @abstractmethod
-    def get_instance(cls) -> T:
-        pass
+_DEPENDENCIES_REGISTER = {}
 
 
 class LazyDependencyProxy:
-    def __init__(self, cls: Type[Dependency]):
-        self.__proxyed_cls = cls
+    def __init__(self, instance_builder: Callable):
+        self.__instance_builder = instance_builder
 
     @cached_property
     def __instance(self):
-        return self.__proxyed_cls.get_instance()
+        return self.__instance_builder()
 
     def __getattr__(self, name):
         return getattr(self.__instance, name)
+
+
+def register_dependency(func=None, singleton: bool = True, cls: Optional[Type] = None):
+    if func is None:
+        return functools.partial(register_dependency, singleton=singleton, cls=cls)
+
+    if cls is None:
+        cls = func.__annotations__.get("return")
+        if cls is None:
+            raise ValueError("No return type annotation found, please provide a class type")
+
+    if singleton:
+        func = functools.lru_cache(maxsize=None)(func)
+
+    _DEPENDENCIES_REGISTER[cls] = LazyDependencyProxy(func)
+
+    return func
 
 
 def inject_dependencies(func):
@@ -34,13 +44,10 @@ def inject_dependencies(func):
         for param_name, param in func_signature.parameters.items():
             param_type = param.annotation
 
-            if (
-                param_type is not param.empty
-                and issubclass(param_type, Dependency)
-                and param_name not in bound_arguments.arguments
-            ):
-                # Inject dependency if not already provided
-                kwargs.setdefault(param_name, LazyDependencyProxy(param_type))
+            if param_type is not param.empty and param_name not in bound_arguments.arguments:
+                found_dependency = _DEPENDENCIES_REGISTER.get(param_type)
+                if found_dependency:
+                    kwargs.setdefault(param_name, found_dependency)
 
         return func(*args, **kwargs)
 

@@ -50,12 +50,8 @@ def compile_file(filename):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Python CLI to compile files with Nuitka."
-    )
-    parser.add_argument(
-        "--compile", type=str, help="Specify the Python file to compile with Nuitka."
-    )
+    parser = argparse.ArgumentParser(description="Python CLI to compile files with Nuitka.")
+    parser.add_argument("--compile", type=str, help="Specify the Python file to compile with Nuitka.")
 
     args = parser.parse_args()
     if not args.compile:

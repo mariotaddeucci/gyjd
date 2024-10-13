@@ -1,4 +1,5 @@
 import argparse
+import importlib
 import os
 import shutil
 import subprocess
@@ -7,7 +8,7 @@ import sys
 
 def install_dependencies():
     try:
-        import nuitka
+        importlib.import_module("nuitka")
     except ImportError:
         print("Installing package gyjd[compiler]...")
         subprocess.check_call(

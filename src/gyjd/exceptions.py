@@ -1,11 +1,10 @@
-from typing import List
 
 
 class GYJDException(Exception): ...
 
 
 class GYJDMultipleException(GYJDException):
-    def __init__(self, exceptions: List[Exception]):
+    def __init__(self, exceptions: list[Exception]):
         self.exceptions = exceptions
 
 

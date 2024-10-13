@@ -2,7 +2,8 @@ import concurrent.futures
 import functools
 import itertools
 import time
-from typing import Any, Callable, Dict, Generator, List, Literal, Optional
+from collections.abc import Callable, Generator
+from typing import Any, Literal
 
 from gyjd.exceptions import (
     GYJDException,
@@ -61,7 +62,7 @@ class GYJDCallable:
 
         raise GYJDException("This should never happen")
 
-    def _call_with_parameters(self, parameters: Dict[str, Any]) -> Any:
+    def _call_with_parameters(self, parameters: dict[str, Any]) -> Any:
         return self.__call__(**parameters)
 
     def partial(self, *args, **kwargs) -> "GYJDCallable":
@@ -83,8 +84,8 @@ class GYJDCallable:
 
     def expand(
         self,
-        parameters: Dict[str, List[Any]],
-        max_workers: Optional[int] = None,
+        parameters: dict[str, list[Any]],
+        max_workers: int | None = None,
         strategy: Literal[
             "sequential",
             "thread_map",

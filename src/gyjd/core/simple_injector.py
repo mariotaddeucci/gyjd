@@ -1,7 +1,7 @@
 import functools
 import inspect
 from functools import cached_property, wraps
-from typing import Callable, Optional, Type
+from collections.abc import Callable
 
 _DEPENDENCIES_REGISTER = {}
 
@@ -18,7 +18,7 @@ class LazyDependencyProxy:
         return getattr(self.__instance, name)
 
 
-def register_dependency(func=None, singleton: bool = True, cls: Optional[Type] = None):
+def register_dependency(func=None, singleton: bool = True, cls: type | None = None):
     if func is None:
         return functools.partial(register_dependency, singleton=singleton, cls=cls)
 

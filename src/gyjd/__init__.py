@@ -1,16 +1,21 @@
 import logging
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Optional
 
 from gyjd.core.cli import CLI
+from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
+from gyjd.core.logger import InternalLogger, get_default_logger
 from gyjd.core.simple_injector import inject_dependencies, register_dependency
+
+register_dependency(get_default_logger, cls=InternalLogger, singleton=True)
+register_dependency(get_default_logger, cls=logging.Logger, singleton=True)
 
 
 class gyjd:
     def __new__(
         cls,
-        func: Optional[Callable] = None,
+        func: Callable | None = None,
         *,
         return_exception_on_fail: bool = False,
         retry_attempts=-0,
@@ -18,7 +23,7 @@ class gyjd:
         retry_max_delay=None,
         retry_backoff=1,
         retry_on_exceptions=(Exception,),
-    ):
+    ) -> GYJDCallable:
         if func is None:
             return gyjd
 
@@ -33,7 +38,7 @@ class gyjd:
         )
 
     @classmethod
-    def command(cls, func: Optional[Callable] = None, alias=None):
+    def command(cls, func: Callable | None = None, alias=None):
         if func is None:
             return partial(cls.command, alias=alias)
 
@@ -42,14 +47,26 @@ class gyjd:
 
         return func
 
+    @classmethod
+    def register_config_file(
+        cls,
+        config_type: type,
+        filepath: str,
+        allow_if_file_not_found: bool = False,
+        subtree: list[str] | str | None = None,
+    ) -> None:
+        register_dependency(
+            partial(
+                load_config_file,
+                filepath=filepath,
+                config_type=config_type,
+                subtree=subtree,
+                allow_if_file_not_found=allow_if_file_not_found,
+            ),
+            cls=config_type,
+            singleton=True,
+        )
 
-@register_dependency
-def get_logger() -> logging.Logger:
-    logger = logging.getLogger("gyjd")
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger.setLevel(logging.INFO)
-    return logger
+    @classmethod
+    def run(cls):
+        CLI.executor()

@@ -10,10 +10,11 @@ from gyjd.core.logger import GYJDLogger, get_default_logger
 from gyjd.core.simple_injector import inject_dependencies, register_dependency
 
 register_dependency(get_default_logger, cls=GYJDLogger, singleton=True, if_exists="skip")
+register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
 
 
 class gyjd:
-    register_dependency = register_dependency
+    register_dependency = partial(register_dependency, if_exists="overwrite")
 
     def __new__(
         cls,
@@ -95,11 +96,6 @@ class gyjd:
                 if_exists="skip",
             )
 
-        return cls
-
-    @classmethod
-    def use_default_logger(cls):
-        register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
         return cls
 
     @classmethod

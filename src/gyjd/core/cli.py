@@ -1,8 +1,8 @@
 import argparse
 import json
-from logging import Logger
 from collections.abc import Callable
 
+from gyjd.core.logger import GYJDLogger
 from gyjd.core.simple_injector import inject_dependencies
 
 
@@ -10,7 +10,7 @@ class CLI:
     __instance = None
 
     @inject_dependencies
-    def __init__(self, logger: Logger = None):
+    def __init__(self, logger: GYJDLogger = None):
         self.commands: dict[str, Callable] = {"help": self.help}
         self.logger = logger
 

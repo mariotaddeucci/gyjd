@@ -1,18 +1,20 @@
 import logging
 from collections.abc import Callable
+from dataclasses import fields, is_dataclass
 from functools import partial
 
 from gyjd.core.cli import CLI
 from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
-from gyjd.core.logger import InternalLogger, get_default_logger
+from gyjd.core.logger import GYJDLogger, get_default_logger
 from gyjd.core.simple_injector import inject_dependencies, register_dependency
 
-register_dependency(get_default_logger, cls=InternalLogger, singleton=True)
-register_dependency(get_default_logger, cls=logging.Logger, singleton=True)
+register_dependency(get_default_logger, cls=GYJDLogger, singleton=True, if_exists="skip")
 
 
 class gyjd:
+    register_dependency = register_dependency
+
     def __new__(
         cls,
         func: Callable | None = None,
@@ -48,25 +50,61 @@ class gyjd:
         return func
 
     @classmethod
+    def _collect_children_config(cls, dataclass_type: type, subtree: str = ""):
+        for field in fields(dataclass_type):
+            full_tree = f"{subtree}.{field.name}" if subtree else field.name
+            if is_dataclass(field.type):
+                yield full_tree, field.type
+                yield from cls._collect_children_config(field.type, full_tree)
+
+    @classmethod
     def register_config_file(
         cls,
         config_type: type,
         filepath: str,
         allow_if_file_not_found: bool = False,
-        subtree: list[str] | str | None = None,
-    ) -> None:
+        subtree: str = "",
+    ):
+        subtree = subtree.strip(".")
+
+        base_loader = partial(
+            load_config_file,
+            filepath=filepath,
+            allow_if_file_not_found=allow_if_file_not_found,
+        )
+
         register_dependency(
             partial(
-                load_config_file,
-                filepath=filepath,
+                base_loader,
                 config_type=config_type,
-                subtree=subtree,
-                allow_if_file_not_found=allow_if_file_not_found,
+                subtree=subtree.split("."),
             ),
             cls=config_type,
             singleton=True,
         )
 
+        for child_subtree, child_type in cls._collect_children_config(config_type):
+            register_dependency(
+                partial(
+                    base_loader,
+                    config_type=child_type,
+                    subtree=child_subtree.split("."),
+                ),
+                cls=child_type,
+                singleton=True,
+                if_exists="skip",
+            )
+
+        return cls
+
+    @classmethod
+    def use_default_logger(cls):
+        register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
+        return cls
+
     @classmethod
     def run(cls):
         CLI.executor()
+
+
+__all__ = ["gyjd"]

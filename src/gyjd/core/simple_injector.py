@@ -1,9 +1,11 @@
 import functools
 import inspect
-from functools import cached_property, wraps
 from collections.abc import Callable
+from functools import cached_property, wraps
+from typing import Literal
 
 _DEPENDENCIES_REGISTER = {}
+IF_EXISTS_TYPE = Literal["raise", "skip", "overwrite"]
 
 
 class LazyDependencyProxy:
@@ -18,7 +20,9 @@ class LazyDependencyProxy:
         return getattr(self.__instance, name)
 
 
-def register_dependency(func=None, singleton: bool = True, cls: type | None = None):
+def register_dependency(
+    func=None, singleton: bool = True, cls: type | None = None, if_exists: IF_EXISTS_TYPE = "raise"
+):
     if func is None:
         return functools.partial(register_dependency, singleton=singleton, cls=cls)
 
@@ -29,6 +33,12 @@ def register_dependency(func=None, singleton: bool = True, cls: type | None = No
 
     if singleton:
         func = functools.lru_cache(maxsize=None)(func)
+
+    if if_exists == "raise" and cls in _DEPENDENCIES_REGISTER:
+        raise ValueError(f"Dependency of type {cls} already registered")
+
+    if if_exists == "skip" and cls in _DEPENDENCIES_REGISTER:
+        return func
 
     _DEPENDENCIES_REGISTER[cls] = LazyDependencyProxy(func)
 

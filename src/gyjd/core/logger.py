@@ -3,7 +3,7 @@ import logging
 LOGGER_NAME = "gyjd"
 
 
-class InternalLogger(logging.Logger): ...
+class GYJDLogger(logging.Logger): ...
 
 
 def get_default_logger():

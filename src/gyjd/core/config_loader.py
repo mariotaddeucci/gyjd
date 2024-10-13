@@ -2,6 +2,7 @@ import os
 import tomllib
 from dataclasses import fields, is_dataclass
 from datetime import date
+from functools import cache
 from typing import Any, Type, TypeVar
 
 T = TypeVar("T")
@@ -53,18 +54,25 @@ def load_data_to_dataclass(data: dict, dataclass_type: type[T]) -> T:
     return dataclass_type(**field_values)
 
 
-def load_config_from_toml_file(filepath: str, subtree: list[str] | str | None = None) -> dict:
+@cache
+def load_file(filepath: str) -> dict:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"Config file '{filepath}' not found")
 
+    with open(filepath, "rb") as file:
+        data = tomllib.load(file)
+
+    return data
+
+
+def load_config_from_toml_file(filepath: str, subtree: list[str] | str | None = None) -> dict:
     if subtree is not None:
         if isinstance(subtree, str):
             subtree = [subtree]
     else:
         subtree = []
 
-    with open(filepath, "rb") as file:
-        data = tomllib.load(file)
+    data = load_file(filepath)
 
     for item in subtree:
         if item not in data:

@@ -6,11 +6,12 @@ from functools import partial
 from gyjd.core.cli import CLI
 from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
-from gyjd.core.logger import GYJDLogger, get_default_logger
+from gyjd.core.logger import GYJDLogger, GYJDLoggerConfig, get_default_logger
 from gyjd.core.simple_injector import inject_dependencies, register_dependency
 
 register_dependency(get_default_logger, cls=GYJDLogger, singleton=True, if_exists="skip")
 register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
+register_dependency(GYJDLoggerConfig, singleton=True, if_exists="skip")
 
 
 class gyjd:
@@ -93,7 +94,7 @@ class gyjd:
                 ),
                 cls=child_type,
                 singleton=True,
-                if_exists="skip",
+                if_exists="overwrite",
             )
 
         return cls

@@ -2,7 +2,7 @@ import functools
 import inspect
 from collections.abc import Callable
 from functools import cached_property, wraps
-from typing import Literal
+from typing import Callable, Literal
 
 _DEPENDENCIES_REGISTER = {}
 IF_EXISTS_TYPE = Literal["raise", "skip", "overwrite"]
@@ -27,9 +27,12 @@ def register_dependency(
         return functools.partial(register_dependency, singleton=singleton, cls=cls)
 
     if cls is None:
-        cls = func.__annotations__.get("return")
-        if cls is None:
-            raise ValueError("No return type annotation found, please provide a class type")
+        if inspect.isclass(func):
+            cls = func
+        else:
+            cls = func.__annotations__.get("return")
+            if cls is None:
+                raise ValueError("No return type annotation found, please provide a class type")
 
     if singleton:
         func = functools.lru_cache(maxsize=None)(func)

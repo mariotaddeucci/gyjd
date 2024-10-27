@@ -1,9 +1,15 @@
-import argparse
 import importlib
+import importlib.util
 import os
 import shutil
 import subprocess
 import sys
+from pathlib import Path
+
+import typer
+from typing_extensions import Annotated
+
+app = typer.Typer(no_args_is_help=True)
 
 
 def install_dependencies():
@@ -19,7 +25,13 @@ def install_dependencies():
         print("Successfully installed gyjd[compiler].")
 
 
-def compile_file(filename):
+@app.command(name="compile", help="Compile a Python file to an executable.", no_args_is_help=True)
+def compile(
+    filename: Annotated[
+        Path,
+        typer.Option(help="Python file to compile."),
+    ],
+):
     install_dependencies()
     dist_path = "dist"
     try:
@@ -50,22 +62,5 @@ def compile_file(filename):
             shutil.rmtree(entry_uri)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Python CLI to compile files with Nuitka.")
-    parser.add_argument("--compile", type=str, help="Specify the Python file to compile with Nuitka.")
-
-    args = parser.parse_args()
-    if not args.compile:
-        print("No file specified to compile. Use --compile <filename.py>.")
-        sys.exit(1)
-
-    filename = args.compile
-    if not os.path.isfile(filename):
-        print(f"File {filename} does not exist.", file=sys.stderr)
-        sys.exit(1)
-
-    compile_file(filename)
-
-
 if __name__ == "__main__":
-    main()
+    app()

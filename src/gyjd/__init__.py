@@ -3,15 +3,16 @@ from collections.abc import Callable
 from dataclasses import fields, is_dataclass
 from functools import partial
 
+from gyjd.config import LoggerConfig
 from gyjd.core.cli import CLI
 from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
-from gyjd.core.logger import GYJDLogger, GYJDLoggerConfig, get_default_logger
+from gyjd.core.logger import GYJDLogger, get_default_logger
 from gyjd.core.simple_injector import inject_dependencies, register_dependency
 
 register_dependency(get_default_logger, cls=GYJDLogger, singleton=True, if_exists="skip")
 register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
-register_dependency(GYJDLoggerConfig, singleton=True, if_exists="skip")
+register_dependency(LoggerConfig, singleton=True, if_exists="skip")
 
 
 class gyjd:
@@ -66,7 +67,7 @@ class gyjd:
         filepath: str,
         allow_if_file_not_found: bool = False,
         subtree: str = "",
-    ):
+    ) -> None:
         subtree = subtree.strip(".")
 
         base_loader = partial(
@@ -97,11 +98,9 @@ class gyjd:
                 if_exists="overwrite",
             )
 
-        return cls
-
     @classmethod
     def run(cls):
-        CLI.executor()
+        CLI.run()
 
 
 __all__ = ["gyjd"]

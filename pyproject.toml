@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "gyjd"
-version = "0.1.0dev7"
+version = "0.1.0dev1"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -19,7 +19,7 @@ compiler = ["nuitka"]
 gyjd = "gyjd.__main__:app"
 
 [tool.hatch.build]
-exclude = ["/tests", "/docs"]
+exclude = ["/tests", "/docs", "/examples"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gyjd"]
@@ -30,6 +30,9 @@ extra-args = ["-vv"]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
+
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pytest.ini_options]
 pythonpath = "src"

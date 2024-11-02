@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -21,3 +21,4 @@ jobs:
 
       - name: Execute Hatch Test
         run: uvx run hatch test
+

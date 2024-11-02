@@ -20,5 +20,5 @@ jobs:
           enable-cache: true
 
       - name: Execute Hatch Test
-        run: uvx run hatch test
+        run: uvx hatch test
 

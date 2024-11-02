@@ -84,7 +84,8 @@ class GYJDCallable:
 
     def expand(
         self,
-        parameters: dict[str, list[Any]],
+        parameters: dict[str, list[Any]] | list[dict[str, Any]],
+        *,
         max_workers: int | None = None,
         strategy: Literal[
             "sequential",
@@ -94,11 +95,16 @@ class GYJDCallable:
             "process_as_completed",
         ] = "sequential",
     ) -> Generator[Any, None, None]:
-        combinations = (dict(zip(parameters.keys(), comb)) for comb in itertools.product(*parameters.values()))
+        if isinstance(parameters, dict):
+            generated_parameters = (
+                dict(zip(parameters.keys(), comb)) for comb in itertools.product(*parameters.values())
+            )
+        else:
+            generated_parameters = parameters
 
         if strategy == "sequential":
-            for combination in combinations:
-                yield self._call_with_parameters(combination)
+            for generated_parameter in generated_parameters:
+                yield self._call_with_parameters(generated_parameter)
             return
 
         executor_type, execution_mode = strategy.split("_", 1)
@@ -110,10 +116,13 @@ class GYJDCallable:
 
         with executor_cls(max_workers=max_workers) as executor:
             if execution_mode == "map":
-                for result in executor.map(self._call_with_parameters, combinations):
+                for result in executor.map(self._call_with_parameters, generated_parameters):
                     yield result
             elif execution_mode == "as_completed":
-                tasks = (executor.submit(self._call_with_parameters, combination) for combination in combinations)
+                tasks = (
+                    executor.submit(self._call_with_parameters, generated_parameter)
+                    for generated_parameter in generated_parameters
+                )
                 for future in concurrent.futures.as_completed(tasks):
                     yield future.result()
             else:

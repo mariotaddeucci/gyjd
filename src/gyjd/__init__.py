@@ -43,7 +43,7 @@ class gyjd:
         )
 
     @classmethod
-    def command(cls, func: Callable | None = None, alias=None):
+    def command(cls, func: Callable | None = None, *, alias=None):
         if func is None:
             return partial(cls.command, alias=alias)
 
@@ -63,6 +63,7 @@ class gyjd:
     @classmethod
     def register_config_file(
         cls,
+        *,
         config_type: type,
         filepath: str,
         allow_if_file_not_found: bool = False,

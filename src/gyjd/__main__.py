@@ -1,71 +1,95 @@
-import argparse
 import importlib
+import importlib.util
 import os
 import shutil
 import subprocess
 import sys
+import time
+from collections import deque
+from pathlib import Path
+from typing import Annotated, Iterator
+
+import click
+import typer
+
+app = typer.Typer(no_args_is_help=True)
+
+
+def print_boxed_output(lines: Iterator[str], max_length: int = 120):
+    if max_length == 0:
+        max_length = max(len(line) for line in lines) if lines else 0
+
+    top_border = click.style("╭" + "─" * (max_length + 2) + "╮", fg="bright_black")
+    bottom_border = click.style("╰" + "─" * (max_length + 2) + "╯", fg="bright_black")
+    click.echo(top_border)
+    for line in lines:
+        padded_line = line[:max_length].ljust(max_length)
+        click.echo(click.style(f"│ {padded_line} │", fg="bright_black"))
+    click.echo(bottom_border)
+
+
+def execute_command(command: list[str]):
+    spool = deque(maxlen=3)
+
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if process.stdout:
+        while process.poll() is None:
+            if spool:
+                sys.stdout.write("\033[F" * (len(spool) + 2))
+                sys.stdout.flush()
+
+            if output := process.stdout.readline():
+                spool.append(output.strip())
+
+            print_boxed_output(lines=spool)
+            time.sleep(0.1)
+
+        process.stdout.close()
+
+    process.wait()
 
 
 def install_dependencies():
     try:
         importlib.import_module("nuitka")
     except ImportError:
-        print("Installing package gyjd[compiler]...")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "gyjd[compiler]"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        print("Successfully installed gyjd[compiler].")
+        click.echo("Installing gyjd[compiler]...")
+        execute_command([sys.executable, "-m", "pip", "install", "gyjd[compiler]"])
 
 
-def compile_file(filename):
+@app.command(name="compile", help="Compile a Python file to an executable.", no_args_is_help=True)
+def compile(
+    filename: Annotated[
+        Path,
+        typer.Option(help="Python file to compile."),
+    ],
+):
+    output_dir = "dist"
     install_dependencies()
-    dist_path = "dist"
     try:
-        print(f"Compiling {filename}...")
-        subprocess.run(
+        click.echo(f"Compiling {filename}...")
+        execute_command(
             [
                 sys.executable,
                 "-m",
                 "nuitka",
                 "--follow-imports",
                 "--onefile",
-                f"--output-dir={dist_path}",
+                f"--output-dir={output_dir}",
                 "--assume-yes-for-downloads",
-                filename,
-            ],
-            check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+                str(filename),
+            ]
         )
-        print(f"Successfully compiled {filename}.")
+        click.echo(f"Successfully compiled {filename}.")
     except subprocess.CalledProcessError as e:
-        print(f"Error during compilation: {e}", file=sys.stderr)
-        sys.exit(1)
+        click.echo(f"Error during compilation: {e}", file=sys.stderr, err=True)
+        raise typer.Exit(code=1)
 
-    for entry in os.listdir(dist_path):
-        entry_uri = os.path.join(dist_path, entry)
+    for entry in os.listdir(output_dir):
+        entry_uri = os.path.join(output_dir, entry)
         if not os.path.isfile(entry_uri):
             shutil.rmtree(entry_uri)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Python CLI to compile files with Nuitka.")
-    parser.add_argument("--compile", type=str, help="Specify the Python file to compile with Nuitka.")
-
-    args = parser.parse_args()
-    if not args.compile:
-        print("No file specified to compile. Use --compile <filename.py>.")
-        sys.exit(1)
-
-    filename = args.compile
-    if not os.path.isfile(filename):
-        print(f"File {filename} does not exist.", file=sys.stderr)
-        sys.exit(1)
-
-    compile_file(filename)
-
-
 if __name__ == "__main__":
-    main()
+    app()

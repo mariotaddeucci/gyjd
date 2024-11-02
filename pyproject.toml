@@ -4,10 +4,12 @@ version = "0.1.0dev7"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "typer>=0.12.5"
+]
 
 [project.scripts]
-gyjd = "gyjd.__main__:main"
+gyjd = "gyjd.__main__:app"
 
 [project.optional-dependencies]
 compiler = ["nuitka"]

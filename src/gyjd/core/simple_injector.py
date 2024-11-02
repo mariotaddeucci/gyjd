@@ -2,7 +2,7 @@ import functools
 import inspect
 from collections.abc import Callable
 from functools import cached_property, wraps
-from typing import Callable, Literal
+from typing import Callable, Literal, Type
 
 _DEPENDENCIES_REGISTER = {}
 IF_EXISTS_TYPE = Literal["raise", "skip", "overwrite"]
@@ -65,3 +65,7 @@ def inject_dependencies(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def get_registered_dependencies() -> set[Type]:
+    return set(_DEPENDENCIES_REGISTER)

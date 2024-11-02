@@ -1,9 +1,10 @@
-import argparse
-import json
-from collections.abc import Callable
+import inspect
+from typing import Callable
+
+import typer
 
 from gyjd.core.logger import GYJDLogger
-from gyjd.core.simple_injector import inject_dependencies
+from gyjd.core.simple_injector import get_registered_dependencies, inject_dependencies
 
 
 class CLI:
@@ -11,11 +12,8 @@ class CLI:
 
     @inject_dependencies
     def __init__(self, logger: GYJDLogger = None):
-        self.commands: dict[str, Callable] = {"help": self.help}
         self.logger = logger
-
-    def help(self):
-        print("Available commands and their arguments:")
+        self.app = typer.Typer(no_args_is_help=True)
 
     @classmethod
     def get_instance(cls):
@@ -24,47 +22,26 @@ class CLI:
         return cls.__instance
 
     @classmethod
-    def registry(cls, func, name):
-        instance = cls.get_instance()
+    def _adjust_signature(cls, func: Callable):
+        sig = inspect.signature(func)
+        registered_types = get_registered_dependencies()
 
-        if name in instance.commands:
-            raise ValueError(f"Command {name} already registered")
+        filtered_params = [param for param in sig.parameters.values() if param.annotation not in registered_types]
+        new_signature = sig.replace(parameters=filtered_params)
 
-        instance.logger.debug(f"Registering {func} with command {name}")
-        instance.commands.update({name: func})
+        def new_func(*args, **kwargs):
+            bound_args = new_signature.bind(*args, **kwargs)
+            return func(*bound_args.args, **bound_args.kwargs)
+
+        setattr(new_func, "__signature__", new_signature)
+        return new_func
 
     @classmethod
-    def executor(cls):
-        cli = cls.get_instance()
+    def registry(cls, func, name):
+        instance = cls.get_instance()
+        instance.app.command(name=name)(cls._adjust_signature(func))
 
-        parser = argparse.ArgumentParser(description="CLI Executor")
-        parser.add_argument(
-            "command",
-            type=str,
-            help="Command to execute",
-            default="help",
-            choices=list(cli.commands.keys()),
-        )
-        parser.add_argument("--json", type=str, help="Arguments in JSON format")
-
-        args, unknown = parser.parse_known_args()
-
-        kwargs = {}
-        for i in range(0, len(unknown), 2):
-            key = unknown[i].lstrip("--")
-            value = unknown[i + 1]
-            kwargs[key] = value
-
-        if kwargs and args.json:
-            cli.logger.error("Only one of JSON or key-value arguments can be passed")
-            return
-
-        if args.json:
-            kwargs = json.loads(args.json)
-
-        fn = cli.commands.get(args.command)
-        if fn is None:
-            cli.logger.error(f"Command {args.command} not found")
-            return
-
-        fn(**kwargs)
+    @classmethod
+    def run(cls):
+        instance = cls.get_instance()
+        instance.app()

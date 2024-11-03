@@ -1,6 +1,5 @@
 import functools
 import inspect
-from collections.abc import Callable
 from functools import cached_property, wraps
 from typing import Callable, Literal, Type
 

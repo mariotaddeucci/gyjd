@@ -1,34 +1,28 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
 [project]
 name = "gyjd"
-version = "0.1.0dev7"
+dynamic = ["version"]
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "typer>=0.12.5"
+  "typer>=0.12.5"
 ]
-
-[project.scripts]
-gyjd = "gyjd.__main__:app"
 
 [project.optional-dependencies]
 compiler = ["nuitka"]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+[project.scripts]
+gyjd = "gyjd.__main__:app"
 
-[tool.ruff]
-line-length = 120
-
-[tool.ruff.lint]
-extend-unsafe-fixes = ["UP"]
+[tool.hatch.build]
+exclude = ["/tests", "/docs", "/examples"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gyjd"]
-
-[tool.hatch.build]
-exclude = ["/tests", "/docs"]
 
 [tool.hatch.envs.hatch-test]
 dependencies = ["pytest >=8.3.3,<9"]
@@ -37,9 +31,18 @@ extra-args = ["-vv"]
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"
 
-[tool.uv]
-dev-dependencies = ["pytest >=8.3.3,<9"]
+[tool.hatch.version]
+source = "vcs"
 
 [tool.pytest.ini_options]
 pythonpath = "src"
 testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+extend-unsafe-fixes = ["UP"]
+
+[tool.uv]
+dev-dependencies = ["pytest >=8.3.3,<9"]

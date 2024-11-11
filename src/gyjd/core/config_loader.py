@@ -83,7 +83,10 @@ def load_config_from_toml_file(filepath: str, subtree: list[str] | str | None = 
 
 
 def load_config_file(
-    config_type: type[T], filepath: str, allow_if_file_not_found: bool = False, subtree: list[str] | str | None = None
+    config_type: type[T],
+    filepath: str,
+    allow_if_file_not_found: bool = False,
+    subtree: list[str] | str | None = None,
 ):
     try:
         data = load_config_from_toml_file(filepath, subtree)

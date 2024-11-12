@@ -7,11 +7,25 @@ from gyjd.config import LoggerConfig
 from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
 from gyjd.core.logger import GYJDLogger, get_default_logger
-from gyjd.core.simple_injector import inject_dependencies, register_dependency
+from gyjd.core.simple_injector import clear_registered_dependencies, inject_dependencies, register_dependency
 
-register_dependency(get_default_logger, cls=GYJDLogger, reuse_times=-1, if_exists="skip")
-register_dependency(get_default_logger, cls=logging.Logger, reuse_times=-1, if_exists="skip")
-register_dependency(LoggerConfig, reuse_times=-1, if_exists="skip")
+
+def setup_defaults(clear_dependencies: bool = False):
+    """
+    Register default dependencies:
+    - GYJDLogger
+    - logging.Logger
+    - LoggerConfig
+
+    If clear_dependencies is True, clear all registered dependencies before registering the default ones.
+    """
+
+    if clear_dependencies:
+        clear_registered_dependencies()
+
+    register_dependency(get_default_logger, cls=GYJDLogger, reuse_times=-1, if_exists="skip")
+    register_dependency(get_default_logger, cls=logging.Logger, reuse_times=-1, if_exists="skip")
+    register_dependency(LoggerConfig, reuse_times=-1, if_exists="skip")
 
 
 class gyjd:
@@ -98,4 +112,5 @@ class gyjd:
             )
 
 
+setup_defaults()
 __all__ = ["gyjd"]

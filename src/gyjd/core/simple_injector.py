@@ -86,3 +86,7 @@ def register_dependency(
 
 def get_registered_dependencies() -> set[Type]:
     return set(_DEPENDENCIES_REGISTER)
+
+
+def clear_registered_dependencies():
+    _DEPENDENCIES_REGISTER.clear()

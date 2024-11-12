@@ -16,18 +16,20 @@ def get_users_urls():
     ]
 
 
-@gyjd(retry_attempts=5)
-def get_json(url: str, random_exception: bool = False, logger: Logger = None):
+@gyjd(retry_attempts=10)
+def get_json(url: str, logger: Logger = None):
     logger.debug(f"GET {url}")
-    if random_exception and random.random() < 0.5:
-        raise ValueError("Random exception")
+
+    if random.random() < 0.5:
+        logger.warning("Random failure activate")
+        url = "https://httpbin.org/status/500"
 
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
 
 
-@gyjd.command(alias="parallel_requests")
+@gyjd
 def example_parallel_requests(
     strategy: str,
     logger: Logger = None,
@@ -46,8 +48,9 @@ def example_parallel_requests(
 
     end_at = time.monotonic()
     elapsed = end_at - start_at
-    logger.info("10 requests completed with at least 1.5 seconds of delay, sequentially would take at least 15 seconds")
-    if elapsed >= 15:
+    logger.info("20 requests completed with at least 1.5 seconds of delay, sequentially would take at least 15 seconds")
+    logger.info("Random failures are expected, retrying up to 10 times")
+    if elapsed >= 30:
         logger.warning(f"Elapsed {elapsed:.2f}s is greater than 15 seconds")
         return
 
@@ -55,4 +58,4 @@ def example_parallel_requests(
 
 
 if __name__ == "__main__":
-    gyjd.run()
+    example_parallel_requests("thread_map")

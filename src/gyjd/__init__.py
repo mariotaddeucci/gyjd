@@ -4,15 +4,28 @@ from dataclasses import fields, is_dataclass
 from functools import partial
 
 from gyjd.config import LoggerConfig
-from gyjd.core.cli import CLI
 from gyjd.core.config_loader import load_config_file
 from gyjd.core.gyjd_callable import GYJDCallable
 from gyjd.core.logger import GYJDLogger, get_default_logger
-from gyjd.core.simple_injector import inject_dependencies, register_dependency
+from gyjd.core.simple_injector import clear_registered_dependencies, inject_dependencies, register_dependency
 
-register_dependency(get_default_logger, cls=GYJDLogger, singleton=True, if_exists="skip")
-register_dependency(get_default_logger, cls=logging.Logger, singleton=True, if_exists="skip")
-register_dependency(LoggerConfig, singleton=True, if_exists="skip")
+
+def setup_defaults(clear_dependencies: bool = False):
+    """
+    Register default dependencies:
+    - GYJDLogger
+    - logging.Logger
+    - LoggerConfig
+
+    If clear_dependencies is True, clear all registered dependencies before registering the default ones.
+    """
+
+    if clear_dependencies:
+        clear_registered_dependencies()
+
+    register_dependency(get_default_logger, cls=GYJDLogger, reuse_times=-1, if_exists="skip")
+    register_dependency(get_default_logger, cls=logging.Logger, reuse_times=-1, if_exists="skip")
+    register_dependency(LoggerConfig, reuse_times=-1, if_exists="skip")
 
 
 class gyjd:
@@ -30,7 +43,16 @@ class gyjd:
         retry_on_exceptions=(Exception,),
     ) -> GYJDCallable:
         if func is None:
-            return gyjd
+            wrapper = partial(
+                gyjd,
+                return_exception_on_fail=return_exception_on_fail,
+                retry_attempts=retry_attempts,
+                retry_delay=retry_delay,
+                retry_max_delay=retry_max_delay,
+                retry_backoff=retry_backoff,
+                retry_on_exceptions=retry_on_exceptions,
+            )
+            return wrapper
 
         return GYJDCallable(
             func=inject_dependencies(func),
@@ -41,16 +63,6 @@ class gyjd:
             retry_backoff=retry_backoff,
             retry_on_exceptions=retry_on_exceptions,
         )
-
-    @classmethod
-    def command(cls, func: Callable | None = None, *, alias=None):
-        if func is None:
-            return partial(cls.command, alias=alias)
-
-        alias = alias or getattr(func, "__name__", None)
-        CLI.registry(inject_dependencies(func), alias)
-
-        return func
 
     @classmethod
     def _collect_children_config(cls, dataclass_type: type, subtree: str = ""):
@@ -84,7 +96,7 @@ class gyjd:
                 subtree=subtree.split("."),
             ),
             cls=config_type,
-            singleton=True,
+            reuse_times=-1,
         )
 
         for child_subtree, child_type in cls._collect_children_config(config_type):
@@ -95,13 +107,10 @@ class gyjd:
                     subtree=child_subtree.split("."),
                 ),
                 cls=child_type,
-                singleton=True,
+                reuse_times=-1,
                 if_exists="overwrite",
             )
 
-    @classmethod
-    def run(cls):
-        CLI.run()
 
-
+setup_defaults()
 __all__ = ["gyjd"]

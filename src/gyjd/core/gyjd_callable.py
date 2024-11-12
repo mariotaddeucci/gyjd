@@ -49,7 +49,6 @@ class GYJDCallable:
                 raised_exceptions.append(e)
 
             attempts -= 1
-            print(attempts)
             if not attempts:
                 prepared_exception = GYJDMultipleException(raised_exceptions)
                 if self._return_exception_on_fail:

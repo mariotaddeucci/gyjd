@@ -57,7 +57,7 @@ wheels = [
 
 [[package]]
 name = "gyjd"
-version = "0.1.dev8+gbf14a79.d20241105"
+version = "0.1.0.dev9"
 source = { editable = "." }
 
 [package.optional-dependencies]

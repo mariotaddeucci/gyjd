@@ -11,10 +11,10 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-compiler = ["nuitka"]
+cli = ["typer", "uv"]
 
 [project.scripts]
-gyjd = "gyjd.__main__:app"
+gyjd = "gyjd.cli.__main__:app"
 
 [tool.hatch.build]
 exclude = ["/tests", "/docs", "/examples"]

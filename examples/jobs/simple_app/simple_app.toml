@@ -1,0 +1,11 @@
+[gyjd.job]
+name = "new_simple_app"
+description = "A simple app that does nothing"
+script = "simple_app.py"
+python_version = "3.11"
+dependencies = ["gyjd", "requests"]
+tags = ["simple", "app"]
+
+[gyjd.job.schedule.cron.default]
+expression = "0 0 * * *"
+timezone = "UTC"

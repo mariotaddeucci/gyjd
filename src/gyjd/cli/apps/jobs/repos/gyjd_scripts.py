@@ -55,6 +55,9 @@ def run_python_script(context: OpExecutionContext):
                 getattr(context.log, level.lower())(message)
 
     exit_code = process.wait()
+    if exit_code != 0:
+        raise Exception(f"Script finished with exit code: {exit_code}")
+
     context.log.info(f"Script finished with exit code: {exit_code}")
 
 

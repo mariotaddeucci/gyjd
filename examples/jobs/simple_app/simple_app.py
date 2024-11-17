@@ -1,9 +1,3 @@
-# /// script
-# dependencies = [
-#   "requests<3",
-#   "gyjd",
-# ]
-# ///
 import random
 import time
 from logging import Logger

@@ -7,9 +7,9 @@ from uuid import uuid4
 @dataclass
 class LoggerConfig:
     name: str = "gyjd"
-    level: str = "INFO"
+    level: str = "$Env:LOG_LEVEL|INFO"
     default_to_console: bool = True
-    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter: str = "$Env:LOG_FORMATTER|%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
 
 @dataclass

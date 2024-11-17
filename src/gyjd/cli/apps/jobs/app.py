@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 from typing import Annotated
@@ -8,7 +9,19 @@ app = typer.Typer(no_args_is_help=True, help="CLI for managing jobs.")
 
 
 @app.command(help="Start dagster server.")
-def server():
+def server(
+    scripts_path: Annotated[
+        Path,
+        typer.Option(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            resolve_path=True,
+            help="Path that contains the scripts to run.",
+            default="scripts",
+        ),
+    ],
+):
     repos_dir = Path(__file__).parent / "repos"
 
     dependencies = ["dagster-webserver", "uv"]
@@ -18,7 +31,10 @@ def server():
     for repo in repos_dir.glob("*.py"):
         command.extend(["-f", str(repo)])
 
-    process = subprocess.run(command, stdout=None, stderr=None, text=True)
+    envs = os.environ.copy()
+    envs["GYJD_SCRIPTS_PATH"] = str(scripts_path.absolute())
+
+    process = subprocess.run(command, stdout=None, stderr=None, text=True, env=envs)
 
     print(f"Exit Code: {process.returncode}")
 

@@ -1,10 +1,19 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import toml
 from dagster import Field, OpExecutionContext, ScheduleDefinition, Shape, job, op, repository
+
+
+@dataclass
+class ScriptConfig:
+    script_path: str
+    script_name: str
+    python_version: str
+    dependencies: list[str] = field(default_factory=list)
 
 
 @op(
@@ -39,20 +48,7 @@ def run_python_script(context: OpExecutionContext):
 
     envs["LOG_FORMATTER"] = f"{logger_prefix} - %(levelname)s - %(message)s"
 
-    process = subprocess.Popen(
-        command,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=envs,
-    )
-
-    if process.stdout:
-        for line in process.stdout:
-            line = line.strip()
-            if line.startswith(logger_prefix):
-                level, message = line.removeprefix(logger_prefix).strip().split(" - ", 1)
-                getattr(context.log, level.lower())(message)
+    process = subprocess.Popen(command, stdout=None, stderr=None, text=True, env=envs)
 
     exit_code = process.wait()
     if exit_code != 0:
@@ -62,16 +58,16 @@ def run_python_script(context: OpExecutionContext):
 
 
 # Função para criar um job para cada script
-def create_job_for_script(script_name: str, script_path: str):
-    @job(name=script_name)
+def create_job_for_script(config: ScriptConfig):
+    @job(name=config.script_name)
     def dynamic_job():
         run_python_script.configured(
             {
-                "script_path": script_path,
-                "python_version": "3.11",
-                "dependencies": ["gyjd", "requests<3"],
+                "script_path": config.script_path,
+                "python_version": config.python_version,
+                "dependencies": config.dependencies,
             },
-            name=f"{script_name}_op",
+            name=f"{config.script_name}_op",
         )()
 
     return dynamic_job
@@ -88,10 +84,16 @@ def generate_definitions(scripts_path: Path):
         if "script" not in script_config:
             continue
 
-        script_path: Path = config_path.parent / script_config["script"]
-        script_name = script_config.get("name", script_path.stem)
+        script_path = (scripts_path / config_path).parent / script_config["script"]
 
-        job = create_job_for_script(script_name, str(script_path))
+        config = ScriptConfig(
+            script_path=str(script_path),
+            script_name=script_config.get("name", script_path.stem),
+            python_version=script_config.get("python_version", f"{sys.version_info.major}.{sys.version_info.minor}"),
+            dependencies=script_config.get("dependencies", []),
+        )
+
+        job = create_job_for_script(config=config)
 
         yield job
 
@@ -108,11 +110,10 @@ def generate_definitions(scripts_path: Path):
                 job=job,
                 cron_schedule=cron_expression,
                 execution_timezone=cron_timezone,
-                name=f"{script_name}_{schedule_name}_schedule",
+                name=f"{config.script_name}_{schedule_name}_schedule",
             )
 
 
-# Repositório contendo os jobs e schedules
 @repository(
     name="scripts_repository",
     description="Repositório com jobs e schedules para scripts Python em ambientes isolados utilizando uv coordenadamente",

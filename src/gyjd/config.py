@@ -1,15 +1,18 @@
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from os import getenv
 from uuid import uuid4
 
 
 @dataclass
 class LoggerConfig:
     name: str = "gyjd"
-    level: str = "$Env:LOG_LEVEL|INFO"
+    level: str = field(default_factory=lambda: getenv("LOG_LEVEL", "INFO"))
     default_to_console: bool = True
-    formatter: str = "$Env:LOG_FORMATTER|%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    formatter: str = field(
+        default_factory=lambda: getenv("LOG_FORMAT", "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
 
 
 @dataclass

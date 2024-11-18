@@ -30,10 +30,7 @@ def get_json(url: str, logger: Logger = None):
 
 
 @gyjd
-def example_parallel_requests(
-    strategy: str,
-    logger: Logger = None,
-):
+def example_parallel_requests(strategy: str, logger: Logger = None):
     logger.info("Starting delayed requests test")
     start_at = time.monotonic()
 
